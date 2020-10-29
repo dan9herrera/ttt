@@ -10,24 +10,25 @@ class Game extends React.Component {
     ],
     stepNumber: 0,
     xIsNext: true,
+    winner: null,
   };
 
   handleClick(i) {
     const history = this.state.history.slice(0, this.state.stepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
-    if (calculateWinner(squares) || squares[i]) {
+
+    if (this.state.winner || squares[i]) {
       return;
     }
+
     squares[i] = this.state.xIsNext ? "X" : "O";
+
     this.setState({
-      history: history.concat([
-        {
-          squares: squares,
-        },
-      ]),
+      history: history.concat([{ squares }]),
       stepNumber: history.length,
       xIsNext: !this.state.xIsNext,
+      winner: calculateWinner(squares),
     });
   }
 
@@ -35,41 +36,51 @@ class Game extends React.Component {
     this.setState({
       stepNumber: step,
       xIsNext: step % 2 === 0,
+      winner: calculateWinner(this.state.history[step].squares.slice()),
     });
   }
 
-  render() {
-    const history = this.state.history;
-    const current = history[this.state.stepNumber];
-    const winner = calculateWinner(current.squares);
+  renderHistory(history) {
+    return (
+      <ol>
+        {this.state.history.map((_, move) => {
+          const desc = move ? "Go to move #" + move : "Go to game start";
+          return (
+            <li key={move}>
+              <button onClick={() => this.jumpTo(move)}>{desc}</button>
+            </li>
+          );
+        })}
+      </ol>
+    );
+  }
 
-    const moves = history.map((step, move) => {
-      const desc = move ? "Go to move #" + move : "Go to game start";
-      return (
-        <li key={move}>
-          <button onClick={() => this.jumpTo(move)}>{desc}</button>
-        </li>
-      );
-    });
+  render() {
+    const { history, stepNumber, winner, xIsNext } = this.state;
+    const { squares } = history[stepNumber];
 
     let status;
     if (winner) {
       status = "Winner: " + winner;
     } else {
-      status = "Next player: " + (this.state.xIsNext ? "X" : "O");
+      if (stepNumber < 9) {
+        status = "Next player: " + (xIsNext ? "X" : "O");
+      } else {
+        status = "Draw!";
+      }
     }
 
     return (
       <div className="game">
         <div className="game-board">
           <Board
-            squares={current.squares}
+            squares={squares}
             onClick={(index) => this.handleClick(index)}
           />
         </div>
         <div className="game-info">
           <div>{status}</div>
-          <ol>{moves}</ol>
+          {this.renderHistory()}
         </div>
       </div>
     );
@@ -98,6 +109,5 @@ function calculateWinner(squares) {
       return squares[a];
     }
   }
-
   return null;
 }
